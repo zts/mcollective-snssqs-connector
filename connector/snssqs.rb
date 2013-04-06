@@ -7,12 +7,24 @@ module MCollective
         Log.info("Initializing SNS-SQS connector...")
         config_path = File.expand_path("~/.aws.yml")
         AWS.config(YAML.load(File.read(config_path)))
-
-        @sqs = AWS::SQS.new
       end
 
       def connect
         Log.info("connect method called...")
+
+        if @sqs
+          Log.debug("Already connected...")
+          return
+        end
+        
+        @sqs = AWS::SQS.new
+        queue_opts = { :message_retention_period => 60 }
+        # queue naming constraints: Maximum 80 characters;
+        # alphanumeric characters, hyphens (-), and underscores (_)
+        # are allowed.
+        name = Config.instance.identity.gsub(/\./, '_')
+        Log.info("creating queue for #{Config.instance.identity} as #{name}...")
+        @sqs.queues.create(name, options = queue_opts)
       end
 
       def subscribe(agent, type, collective)
