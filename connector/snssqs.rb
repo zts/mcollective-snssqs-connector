@@ -67,7 +67,12 @@ module MCollective
         sqs_msg = nil
 
         until sqs_msg
-          sqs_msg = @queue.receive_message({:wait_time_seconds => 20})
+          # need to run this inside a thread, so that Timeout works
+          # http://stackoverflow.com/a/10584134/1365624
+          Thread.new do
+            sqs_msg = @queue.receive_message({:wait_time_seconds => 20})
+            Log.info("Still looking for a message from SQS...")
+          end
         end
         sns_msg = sqs_msg.as_sns_message
         Log.info("msg from SNS is: " + sns_msg.body)
