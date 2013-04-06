@@ -58,13 +58,18 @@ module MCollective
         sns_topic = make_sns_target(msg.agent, msg.type, msg.collective)
 
         topic = @sns.topics.create(sns_topic)
-        topic.publish(msg)
+        topic.publish(msg.payload)
         Log.info("Published #{msg.requestid} to SNS #{sns_topic}")
       end
       
       def receive()
         Log.info("Looking for a message from SQS...")
-        sleep 60
+        sqs_msg = @queue.receive_message({:wait_time_seconds => 20})
+        sns_msg = sqs_msg.as_sns_message
+        Log.info("msg from SNS is: " + sns_msg.body)
+        sqs_msg.delete
+        Log.info("Got one, attempting to return a Message...")
+        Message.new(sns_msg.body, sns_msg)
       end
 
       def disconnect
