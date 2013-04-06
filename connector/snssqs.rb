@@ -5,6 +5,10 @@ module MCollective
     class Snssqs<Base
       def initialize
         Log.info("Initializing SNS-SQS connector...")
+        config_path = File.expand_path("~/.aws.yml")
+        AWS.config(YAML.load(File.read(config_path)))
+
+        @sqs = AWS::SQS.new
       end
 
       def connect
