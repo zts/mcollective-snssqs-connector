@@ -19,6 +19,14 @@ module MCollective
         Log.info("subscribe called with agent/type/collective #{agent}/#{type}/#{collective}")
       end
 
+      def unsubscribe(agent, type, collective)
+        Log.info("unsubscribe called with agent/type/collective #{agent}/#{type}/#{collective}")
+      end
+
+      def publish(msg)
+        Log.info("publish called for agent/type/collective #{msg.agent}/#{msg.type}/#{msg.collective} (requestid: #{msg.requestid})")
+      end
+      
       def receive()
         Log.info("Looking for a message from SQS...")
         sleep 60
