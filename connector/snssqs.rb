@@ -8,7 +8,7 @@ module MCollective
         config_path = File.expand_path("~/.aws.yml")
         AWS.config(YAML.load(File.read(config_path)))
 
-        @subscriptions = []
+        @subscriptions = {}
       end
 
       def connect
@@ -37,19 +37,30 @@ module MCollective
 
         sns_topic = make_sns_target(agent, type, collective)
 
-        if @subscriptions.include?(sns_topic)
+        if @subscriptions.has_key?(sns_topic)
           Log.info("Already subscribed to #{sns_topic}")
         else
           Log.info("Creating SNS topic for #{sns_topic}")
           topic = @sns.topics.create(sns_topic)
           Log.info("Subscribing SQS queue #{@queue} to SNS topic #{sns_topic}")
-          topic.subscribe(@queue)
-          @subscriptions << sns_topic
+          subscription = topic.subscribe(@queue)
+          @subscriptions[sns_topic] = { 'topic' => topic, 'subscription' => subscription }
         end
       end
 
       def unsubscribe(agent, type, collective)
         Log.info("unsubscribe called with agent/type/collective #{agent}/#{type}/#{collective}")
+        sns_topic = make_sns_target(agent, type, collective)
+
+        unless @subscriptions.has_key?(sns_topic)
+          Log.info("Not subscribed to #{sns_topic}")
+          return
+        end
+
+        Log.info("Unsubscribing from #{sns_topic}...")
+        @subscriptions[sns_topic]['subscription'].unsubscribe
+        @subscriptions.delete(sns_topic)
+        Log.info("Unsubscribing from #{sns_topic} done")
       end
 
       def publish(msg)
