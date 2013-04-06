@@ -64,10 +64,16 @@ module MCollective
       
       def receive()
         Log.info("Looking for a message from SQS...")
-        sqs_msg = @queue.receive_message({:wait_time_seconds => 20})
+        sqs_msg = nil
+
+        until sqs_msg
+          sqs_msg = @queue.receive_message({:wait_time_seconds => 20})
+        end
         sns_msg = sqs_msg.as_sns_message
         Log.info("msg from SNS is: " + sns_msg.body)
+
         sqs_msg.delete
+        
         Log.info("Got one, attempting to return a Message...")
         Message.new(sns_msg.body, sns_msg)
       end
